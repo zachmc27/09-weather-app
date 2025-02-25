@@ -9,10 +9,10 @@ interface Coordinates {
 // TODO: Define a class for the Weather object
 // Used in build forecast array, should hold details about the forecast that are obtained from the returned object of weather data
 class Weather {
-  city: string;
-  date: string;
+  city?: string;
+  date?: string;
   icon: string;
-  iconDescription: string;
+  iconDescription?: string;
   tempF: number;
   windSpeed: number;
   humidity: number;
@@ -52,7 +52,7 @@ class WeatherService {
   //enter the city into geocode api to return object containing lat and lon
   //wait then save lat and lon into locationData and return locationData
   private async fetchLocationData(query: string) {
-    let locationData = {
+    let locationData: Coordinates = {
       lat: '',
       lon: ''
     }
@@ -67,8 +67,8 @@ class WeatherService {
     const geocodeParsed = await geocode.json()
     
     locationData = {
-      lat: geocodeParsed.lat,
-      lon: geocodeParsed.lon
+      lat: geocodeParsed[0].lat,
+      lon: geocodeParsed[0].lon
     }
 
     return locationData
@@ -108,23 +108,23 @@ class WeatherService {
   //put lat and lon for desired location into an api call URL, save response into a variable and return the variable
   private async fetchWeatherData(coordinates: Coordinates) {
     const weatherQuery = this.buildWeatherQuery(coordinates)
-
+   try {
    const fetchedWeather = await fetch(weatherQuery)
-
-    if (!fetchedWeather.ok) {
-      throw new Error(`Error:${fetchedWeather.statusText}`)
-    }
-
-    const weatherData = await fetchedWeather.json()
+   const weatherData = await fetchedWeather.json()
     return weatherData
+   } catch (err) {
+    throw new Error(`Error:err` )
+   }
   }
 
   // TODO: Build parseCurrentWeather method
   //make weather class
   private parseCurrentWeather(response: any) {
+    const dateOnly = response.list[0].dt_txt.split(" ")
+    try {
     const weather = new Weather(
-      this.cityName,
-      response.list[0].dt_txt,
+      response.city.name,
+      dateOnly[0],
       response.list[0].weather[0].icon,
       response.list[0].weather[0].description,
       response.list[0].main.temp,
@@ -133,6 +133,9 @@ class WeatherService {
     )
 
     return weather
+  } catch (err) {
+    throw new Error('Invalid weather data.')
+  }
   }
   // TODO: Complete buildForecastArray method
   //api call then put the response data into weatherData array
@@ -140,13 +143,14 @@ class WeatherService {
     let forecastArray = [currentWeather]
     
     const futureDays = weatherData.filter((item) => {
-      return item.dt_txt.includes('00:00:00')
+      return item.dt_txt.includes('12:00:00')
     })
 
     const futureDaysWeather = futureDays.map((item) => {
+      const dateOnly = item.dt_txt.split(" ")
       const weatherOfDay = new Weather(
         this.cityName,
-        item.dt_txt,
+        dateOnly[0],
         item.weather[0].icon,
         item.weather[0].description,
         item.main.temp,
@@ -164,9 +168,12 @@ class WeatherService {
   async getWeatherForCity(city: string) {
     this.cityName = city
     const coordinates = await this.fetchAndDestructureLocationData();
+    console.log('Fetched Coordinates:', coordinates);
     const weatherData = await this.fetchWeatherData(coordinates);
-    const currentWeather = this.parseCurrentWeather(weatherData);
-    const forecast = this.buildForecastArray(currentWeather, weatherData.list)
+    const currentWeather = await this.parseCurrentWeather(weatherData);
+    console.log('Fetched current weather:', currentWeather)
+    const forecast = await this.buildForecastArray(currentWeather, weatherData.list)
+    console.log('Fetched forecast:', forecast)
 
     return forecast
   }

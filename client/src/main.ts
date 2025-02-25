@@ -35,6 +35,7 @@ API Calls
 */
 
 const fetchWeather = async (cityName: string) => {
+  
   const response = await fetch('/api/weather/', {
     method: 'POST',
     headers: {
@@ -42,11 +43,14 @@ const fetchWeather = async (cityName: string) => {
     },
     body: JSON.stringify({ cityName }),
   });
-
+  //returning empty object
+  console.log(response)
   const weatherData = await response.json();
 
-  console.log('weatherData: ', weatherData);
-
+  console.log('Success! weatherData: ', weatherData);
+  console.log('This is an array', ['Hi', 2, 3, weatherData]);
+  console.log({title: 'object', content: "this is an object"});
+  console.log(JSON.stringify(weatherData, null, 2));
   renderCurrentWeather(weatherData[0]);
   renderForecast(weatherData.slice(1));
 };
